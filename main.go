@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/dgraph-io/dgo/v200"
@@ -38,7 +40,7 @@ type Person struct {
 	DType    []string   `json:"dgraph.type,omitempty"`
 }
 
-// creates or updates the schema
+// creates or updates the schema.
 func alterSchema(ctx context.Context, dg *dgo.Dgraph) error {
 	var op api.Operation
 	op.Schema = `
@@ -80,7 +82,7 @@ func alterSchema(ctx context.Context, dg *dgo.Dgraph) error {
 	return nil
 }
 
-// setup the person struct data
+// setup the person struct data.
 func setupPerson() Person {
 
 	alice := "_:alice"
@@ -123,13 +125,13 @@ func setupPerson() Person {
 	return p
 }
 
-// run the 'set' mutation
+// run the 'set' mutation.
 func mutate(ctx context.Context, dg *dgo.Dgraph, p Person) (map[string]string, error) {
 
 	// 1. json encode the person struct
 	pb, err := json.Marshal(p)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	// 2. assign json payload to SetJson
@@ -151,7 +153,7 @@ func mutate(ctx context.Context, dg *dgo.Dgraph, p Person) (map[string]string, e
 	return assigned.Uids, nil
 }
 
-// query the graph data for "alice"
+// query the graph data for "alice".
 func query(ctx context.Context, dg *dgo.Dgraph, uid string) ([]byte, error) {
 
 	variables := map[string]string{"$id": uid}
@@ -188,6 +190,16 @@ func query(ctx context.Context, dg *dgo.Dgraph, uid string) ([]byte, error) {
 	return resp.Json, nil
 }
 
+// alter the database.
+func alter(ctx context.Context, dg *dgo.Dgraph, op *api.Operation) error {
+	err := dg.Alter(ctx, op)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func main() {
 
 	// connect to a dgraph cluster node (alpha)
@@ -205,40 +217,84 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	// create or update the schema
-	err = alterSchema(ctx, dg)
-	if err != nil {
-		log.Fatal("schema failed:", err)
+	var (
+		uids map[string]string
+		cmd  string
+	)
+
+	if len(os.Args) > 1 {
+		cmd = os.Args[1:][0]
 	}
 
-	// setup person struct data, and run the 'set' mutation
-	uids, err := mutate(ctx, dg, setupPerson())
-	if err != nil {
-		log.Fatal("mutation failed:", err)
+	switch cmd {
+	case "schema":
+		// create or update the schema
+		err = alterSchema(ctx, dg)
+		if err != nil {
+			log.Fatal("schema failed:", err)
+		}
+		fmt.Println("schema: created.")
+
+	case "mutate":
+		// setup person struct data, and run the 'set' mutation
+		uids, err = mutate(ctx, dg, setupPerson())
+		if err != nil {
+			log.Fatal("mutation failed:", err)
+		}
+		fmt.Println("mutate: 'set' mutation done. Alice:", uids["alice"])
+
+	case "query":
+		// 'query' graph data using the returned uid for "alice"
+		alice := "0xcc"
+		result, err := query(ctx, dg, alice)
+		if err != nil {
+			log.Fatal("query failed:", err)
+		}
+
+		fmt.Printf("query: [%v] bytes of graph data retrieved.\n", len(result))
+		//fmt.Println("json response:", string(result))
+
+		// Decode the JSON result
+		type Root struct {
+			People []Person `json:"person"`
+		}
+
+		var r Root
+		err = json.Unmarshal(result, &r)
+		if err != nil {
+			log.Fatal("json decoding failed:", err)
+		}
+
+		// The r.People slice should contain the person we set up in the mutation step.
+		fmt.Printf("People: slice lenght: %+d\n", len(r.People))
+		p := r.People[0]
+		fmt.Printf("People: want: 0xcc => have: %+s, name: %s\n", *p.UID, p.Name) // %#v
+
+	case "drop-data":
+		// drop all data in the database.
+		dropdata := api.Operation{DropOp: api.Operation_DATA}
+		err = alter(ctx, dg, &dropdata)
+		if err != nil {
+			log.Fatal("data droping failed:", err)
+		}
+		fmt.Println("drop-data: droped all the data.")
+
+	case "drop-schema":
+		// drop all data and schema in the database.
+		dropall := api.Operation{DropOp: api.Operation_ALL}
+		err = alter(ctx, dg, &dropall)
+		if err != nil {
+			log.Fatal("schema droping failed:", err)
+		}
+		fmt.Println("drop-schema: droped the schema.")
+
+	default:
+		fmt.Println("schema: create the schema in the database")
+		fmt.Println("mutate: add graph data to the database")
+		fmt.Println("query: get specified graph data from the database")
+		fmt.Println("drop-data: drop all data in the database")
+		fmt.Println("drop-schema: drop data and schema in the database")
 	}
 
-	// 'query' graph data using the returned uid for "alice"
-	result, err := query(ctx, dg, uids["alice"])
-	if err != nil {
-		log.Fatal("query failed:", err)
-	}
-
-	// fmt.Println("json response:", string(result))
-	// json response: {"person":[{"uid":"0x93","name":"Alice","dob":"1980-01-01T23:00:00Z","age":26,"loc":{"type":"Point","coordinates":[1.1,2]},"raw_bytes":"cmF3X2J5dGVz","married":true,"dgraph.type":["Person"],"friends":[{"uid":"0x94","name":"Bob","age":24,"dgraph.type":["Person"]}],"school":[{"uid":"0x92","name":"Crown Public School","dgraph.type":["Institution"]}]}]}
-
-	// Decode the JSON result
-	type Root struct {
-		People []Person `json:"person"`
-	}
-
-	var r Root
-	err = json.Unmarshal(result, &r)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// r.People should contain the person we set up in the mutation step.
-
-	// fmt.Printf("People: %+v\n", r.People) // %#v
-	// People: [{UID:0xc00025d0d0 Name:Alice Age:26 Dob:1980-01-01 23:00:00 +0000 UTC Married:true Raw:[114 97 119 95 98 121 116 101 115] Friends:[{UID:0xc00025d0e0 Name:Bob Age:24 Dob:<nil> Married:false Raw:[] Friends:[] Location:<nil> School:[] DType:[Person]}] Location:0xc000202690 School:[{UID:0xc00025d100 Name:Crown Public School DType:[Institution]}] DType:[Person]}]
+	return
 }
