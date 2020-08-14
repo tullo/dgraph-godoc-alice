@@ -1,0 +1,51 @@
+# https://docs.docker.com/compose/compose-file
+# Docker-compose Tricks and Best Practices
+# https://medium.com/factualopinions/docker-compose-tricks-and-best-practices-5e7e43eba8eb
+
+version: '3.8'
+
+networks:
+  shared-network:
+    driver: bridge
+
+services:
+
+  # Dgraph Zero controls the Dgraph cluster, assigns servers to a group, and re-balances data between server groups.
+  dgraph-zero:
+    image: dgraph/dgraph:v20.07.0
+    container_name: dgraph-zero
+    networks:
+      - shared-network
+    environment:
+      - DGRAPH_ZERO_MY=dgraph-zero:5080
+    command: dgraph zero --enable_sentry=false
+
+  # Dgraph Alpha hosts predicates and indexes.
+  # Predicates are either the properties associated with a node or the relationship between two nodes.
+  # Indexes are the tokenizers that can be associated with the predicates to enable filtering using appropriate functions.
+  dgraph-alpha:
+    container_name: dgraph-alpha
+    networks:
+      - shared-network
+    image: dgraph/dgraph:v20.07.0
+    ports:
+      - 8080:8080
+      - 9080:9080
+    depends_on:
+      - dgraph-zero
+    environment:
+      - DGRAPH_ALPHA_MY=dgraph-alpha:7080
+      - DGRAPH_ALPHA_LRU_MB=1024
+      - DGRAPH_ALPHA_ZERO=dgraph-zero:5080
+      - DGRAPH_ALPHA_WHITELIST=0.0.0.0/0
+    command: dgraph alpha --vmodule=server=3 --enable_sentry=false
+
+  # Ratel serves the UI to run queries, mutations & altering schema.
+  dgraph-ratel:
+    image: dgraph/dgraph:v20.07.0
+    container_name: dgraph-ratel
+    networks:
+      - shared-network
+    ports:
+      - 8000:8000
+    command: dgraph-ratel
