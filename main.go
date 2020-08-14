@@ -143,14 +143,14 @@ func mutate(ctx context.Context, dg *dgo.Dgraph, p Person) (map[string]string, e
 	//fmt.Printf("SetJson: %#v\n", string(mu.SetJson))
 
 	// 3. run the 'set' mutation on the cluster node
-	assigned, err := dg.NewTxn().Mutate(ctx, &mu)
+	resp, err := dg.NewTxn().Mutate(ctx, &mu)
 	if err != nil {
 		return nil, err
 	}
-	// log.Printf("Mutate result: %+v\n", assigned)
+	// log.Printf("Mutate response: %+v\n", resp)
 
 	// uids for the nodes which were created by the mutation
-	return assigned.Uids, nil
+	return resp.Uids, nil
 }
 
 // query the graph data for "alice".
