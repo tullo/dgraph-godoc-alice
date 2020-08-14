@@ -17,6 +17,10 @@ drop-data:
 drop-schema:
 	@go run . drop-schema
 
+deps-upgrade:
+	@go get -u -t -d -v ./...
+	@go mod tidy
+
 dgraph-down:
 	@docker-compose down --remove-orphans --volumes
 
