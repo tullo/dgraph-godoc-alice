@@ -39,7 +39,7 @@ type Person struct {
 }
 
 // creates or updates the schema
-func alterSchema(dg *dgo.Dgraph) error {
+func alterSchema(ctx context.Context, dg *dgo.Dgraph) error {
 	var op api.Operation
 	op.Schema = `
 	name: string @index(exact) .
@@ -73,9 +73,6 @@ func alterSchema(dg *dgo.Dgraph) error {
 		name
 	}
 	`
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
 	if err := dg.Alter(ctx, &op); err != nil {
 		return err
 	}
@@ -127,7 +124,7 @@ func setupPerson() Person {
 }
 
 // run the 'set' mutation
-func mutate(dg *dgo.Dgraph, p Person) (map[string]string, error) {
+func mutate(ctx context.Context, dg *dgo.Dgraph, p Person) (map[string]string, error) {
 
 	// 1. json encode the person struct
 	pb, err := json.Marshal(p)
@@ -143,9 +140,6 @@ func mutate(dg *dgo.Dgraph, p Person) (map[string]string, error) {
 	//fmt.Printf("SetJson: %+v\n", string(mu.SetJson))
 	//fmt.Printf("SetJson: %#v\n", string(mu.SetJson))
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
 	// 3. run the 'set' mutation on the cluster node
 	assigned, err := dg.NewTxn().Mutate(ctx, &mu)
 	if err != nil {
@@ -158,7 +152,7 @@ func mutate(dg *dgo.Dgraph, p Person) (map[string]string, error) {
 }
 
 // query the graph data for "alice"
-func query(dg *dgo.Dgraph, uid string) ([]byte, error) {
+func query(ctx context.Context, dg *dgo.Dgraph, uid string) ([]byte, error) {
 
 	variables := map[string]string{"$id": uid}
 
@@ -186,9 +180,6 @@ func query(dg *dgo.Dgraph, uid string) ([]byte, error) {
 		}
 	}
 	`
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
 	resp, err := dg.NewTxn().QueryWithVars(ctx, q, variables)
 	if err != nil {
 		return nil, err
@@ -211,20 +202,23 @@ func main() {
 	// dgraph client API (backed by one or more cluster nodes)
 	dg := dgo.NewDgraphClient(dc)
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
 	// create or update the schema
-	err = alterSchema(dg)
+	err = alterSchema(ctx, dg)
 	if err != nil {
 		log.Fatal("schema failed:", err)
 	}
 
 	// setup person struct data, and run the 'set' mutation
-	uids, err := mutate(dg, setupPerson())
+	uids, err := mutate(ctx, dg, setupPerson())
 	if err != nil {
 		log.Fatal("mutation failed:", err)
 	}
 
 	// 'query' graph data using the returned uid for "alice"
-	result, err := query(dg, uids["alice"])
+	result, err := query(ctx, dg, uids["alice"])
 	if err != nil {
 		log.Fatal("query failed:", err)
 	}
