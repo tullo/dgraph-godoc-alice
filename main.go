@@ -230,7 +230,7 @@ func main() {
 	}
 
 	// fmt.Println("json response:", string(result))
-	//
+	// json response: {"person":[{"uid":"0x93","name":"Alice","dob":"1980-01-01T23:00:00Z","age":26,"loc":{"type":"Point","coordinates":[1.1,2]},"raw_bytes":"cmF3X2J5dGVz","married":true,"dgraph.type":["Person"],"friends":[{"uid":"0x94","name":"Bob","age":24,"dgraph.type":["Person"]}],"school":[{"uid":"0x92","name":"Crown Public School","dgraph.type":["Institution"]}]}]}
 
 	// Decode the JSON result
 	type Root struct {
@@ -246,5 +246,5 @@ func main() {
 	// r.People should contain the person we set up in the mutation step.
 
 	// fmt.Printf("People: %+v\n", r.People) // %#v
-	//
+	// People: [{UID:0xc00025d0d0 Name:Alice Age:26 Dob:1980-01-01 23:00:00 +0000 UTC Married:true Raw:[114 97 119 95 98 121 116 101 115] Friends:[{UID:0xc00025d0e0 Name:Bob Age:24 Dob:<nil> Married:false Raw:[] Friends:[] Location:<nil> School:[] DType:[Person]}] Location:0xc000202690 School:[{UID:0xc00025d100 Name:Crown Public School DType:[Institution]}] DType:[Person]}]
 }
