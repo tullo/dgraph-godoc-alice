@@ -11,6 +11,9 @@ mutate:
 query:
 	@go run . query
 
+upsert:
+	@go run . upsert
+
 drop-data:
 	@go run . drop-data
 

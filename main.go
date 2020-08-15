@@ -134,7 +134,7 @@ func setupPerson() Person {
 	return p
 }
 
-// run the 'set' mutation.
+// run a 'set' mutation.
 func mutate(ctx context.Context, dg *dgo.Dgraph, p Person) (map[string]string, error) {
 
 	txn := dg.NewTxn()
@@ -269,6 +269,37 @@ func extractPeople(res []byte) []Person {
 	return r.People
 }
 
+// run an upsert: query + mutation.
+func upsert(ctx context.Context, dg *dgo.Dgraph) ([]byte, error) {
+
+	txn := dg.NewTxn()
+	defer txn.Discard(ctx)
+
+	query := `
+		query {
+			user as var(func: eq(name, "Alice"), first:1)
+		}`
+	mu := api.Mutation{
+		SetNquads: []byte(`
+		uid(user) <married> "false" .
+		uid(user) <age> "30" .
+		`),
+	}
+	req := api.Request{
+		Query:     query,
+		Mutations: []*api.Mutation{&mu},
+		CommitNow: true,
+	}
+
+	// update predicate only if a matching uid was found.
+	resp, err := txn.Do(ctx, &req)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Json, nil
+}
+
 func main() {
 
 	// connect to a dgraph cluster node (alpha)
@@ -327,6 +358,13 @@ func main() {
 		// The slice should contain the person we set up in the mutation step.
 		// fmt.Printf("query: people slice lenght: %+d\n", len(ppl))
 		fmt.Printf("query: want: %v => have: %+s, name: %s\n", uid, *ppl[0].UID, ppl[0].Name) // %#v
+
+	case "upsert":
+		// upsert: query + mutation
+		_, err := upsert(ctx, dg)
+		if err != nil {
+			log.Fatal("upsert failed:", err)
+		}
 
 	case "drop-data":
 		// drop all data in the database.
