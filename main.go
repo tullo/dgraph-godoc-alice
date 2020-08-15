@@ -24,18 +24,13 @@ type Loc struct {
 	Coords []float64 `json:"coordinates,omitempty"`
 }
 
-type Query struct {
-	spec string
-	vars map[string]string
-}
-
-func newQuery(qs string, key, val string) Query {
-	q := Query{
-		spec: qs,
-		vars: make(map[string]string, 1),
+func newRequest(qs string, key, val string) *api.Request {
+	r := api.Request{
+		Query: qs,
+		Vars:  make(map[string]string, 1),
 	}
-	q.vars[key] = val
-	return q
+	r.Vars[key] = val
+	return &r
 }
 
 // If omitempty is not set, then edges with empty values (0 for int/float, "" for string, false
@@ -168,9 +163,10 @@ func mutate(ctx context.Context, dg *dgo.Dgraph, p Person) (map[string]string, e
 }
 
 // query retrieves graph data from the database.
-func query(ctx context.Context, dg *dgo.Dgraph, q Query) ([]byte, error) {
-	//resp, err := dg.NewTxn().Query(ctx, q)
-	resp, err := dg.NewTxn().QueryWithVars(ctx, q.spec, q.vars)
+func query(ctx context.Context, dg *dgo.Dgraph, r *api.Request) ([]byte, error) {
+	// resp, err := dg.NewTxn().Query(ctx, r.Query)                  // no variables
+	// resp, err := dg.NewTxn().QueryWithVars(ctx, r.Query, r.Vars)  // with variables
+	resp, err := dg.NewTxn().Do(ctx, r) // with or without variables
 	if err != nil {
 		return nil, err
 	}
@@ -190,12 +186,12 @@ func alter(ctx context.Context, dg *dgo.Dgraph, op *api.Operation) error {
 
 // returns the first value found for the name.
 func lookupUID(ctx context.Context, dg *dgo.Dgraph, name string) string {
-	q := newQuery(`query q($name: string) {
+	r := newRequest(`query q($name: string) {
 		alice(func: eq(name, $name), first:1) {
 			uid
 		}
 	}`, "$name", name)
-	result, err := query(ctx, dg, q)
+	result, err := query(ctx, dg, r)
 	if err != nil {
 		log.Fatal("query failed:", err)
 	}
@@ -205,7 +201,7 @@ func lookupUID(ctx context.Context, dg *dgo.Dgraph, name string) string {
 
 // returns graph data for a person identified by uid.
 func lookupGraph(ctx context.Context, dg *dgo.Dgraph, uid string) ([]byte, error) {
-	q := newQuery(`query q($id: string){
+	r := newRequest(`query q($id: string){
 		person(func: uid($id)) {
 			uid
 			name
@@ -228,7 +224,7 @@ func lookupGraph(ctx context.Context, dg *dgo.Dgraph, uid string) ([]byte, error
 			}
 		}
 	}`, "$id", uid)
-	return query(ctx, dg, q)
+	return query(ctx, dg, r)
 }
 
 func extractUID(res []byte) string {
@@ -261,6 +257,9 @@ func extractPeople(res []byte) []Person {
 		log.Fatal("json decoding failed:", err)
 		return nil
 	}
+
+	// out, _ := json.MarshalIndent(&r, "", "  ")
+	// fmt.Printf("%s\n", out)
 
 	return r.People
 }
