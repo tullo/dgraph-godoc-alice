@@ -24,6 +24,20 @@ type Loc struct {
 	Coords []float64 `json:"coordinates,omitempty"`
 }
 
+type Query struct {
+	spec string
+	vars map[string]string
+}
+
+func newQuery(qs string, key, val string) Query {
+	q := Query{
+		spec: qs,
+		vars: make(map[string]string, 1),
+	}
+	q.vars[key] = val
+	return q
+}
+
 // If omitempty is not set, then edges with empty values (0 for int/float, "" for string, false
 // for bool) would be created for values not specified explicitly.
 
@@ -153,12 +167,45 @@ func mutate(ctx context.Context, dg *dgo.Dgraph, p Person) (map[string]string, e
 	return resp.Uids, nil
 }
 
-// query the graph data for "alice".
-func query(ctx context.Context, dg *dgo.Dgraph, uid string) ([]byte, error) {
+// query retrieves graph data from the database.
+func query(ctx context.Context, dg *dgo.Dgraph, q Query) ([]byte, error) {
+	//resp, err := dg.NewTxn().Query(ctx, q)
+	resp, err := dg.NewTxn().QueryWithVars(ctx, q.spec, q.vars)
+	if err != nil {
+		return nil, err
+	}
 
-	variables := map[string]string{"$id": uid}
+	return resp.Json, nil
+}
 
-	q := `query q($id: string){
+// alter the database.
+func alter(ctx context.Context, dg *dgo.Dgraph, op *api.Operation) error {
+	err := dg.Alter(ctx, op)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// returns the first value found for the name.
+func lookupUID(ctx context.Context, dg *dgo.Dgraph, name string) string {
+	q := newQuery(`query q($name: string) {
+		alice(func: eq(name, $name), first:1) {
+			uid
+		}
+	}`, "$name", name)
+	result, err := query(ctx, dg, q)
+	if err != nil {
+		log.Fatal("query failed:", err)
+	}
+
+	return extractUID(result)
+}
+
+// returns graph data for a person identified by uid.
+func lookupGraph(ctx context.Context, dg *dgo.Dgraph, uid string) ([]byte, error) {
+	q := newQuery(`query q($id: string){
 		person(func: uid($id)) {
 			uid
 			name
@@ -180,24 +227,42 @@ func query(ctx context.Context, dg *dgo.Dgraph, uid string) ([]byte, error) {
 				dgraph.type
 			}
 		}
-	}
-	`
-	resp, err := dg.NewTxn().QueryWithVars(ctx, q, variables)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp.Json, nil
+	}`, "$id", uid)
+	return query(ctx, dg, q)
 }
 
-// alter the database.
-func alter(ctx context.Context, dg *dgo.Dgraph, op *api.Operation) error {
-	err := dg.Alter(ctx, op)
-	if err != nil {
-		return err
+func extractUID(res []byte) string {
+
+	type alice struct {
+		People []Person `json:"alice"`
+	}
+	var a alice
+
+	if err := json.Unmarshal(res, &a); err != nil {
+		log.Fatal("json decoding failed:", err)
+		return ""
+	}
+	if len(a.People) < 0 {
+		return ""
+	}
+	return *a.People[0].UID // dereference the string pointer
+}
+
+func extractPeople(res []byte) []Person {
+
+	type Root struct {
+		People []Person `json:"person"`
 	}
 
-	return nil
+	var r Root
+	// fmt.Println("json response:", string(res))
+
+	if err := json.Unmarshal(res, &r); err != nil {
+		log.Fatal("json decoding failed:", err)
+		return nil
+	}
+
+	return r.People
 }
 
 func main() {
@@ -245,30 +310,19 @@ func main() {
 
 	case "query":
 		// 'query' graph data using the returned uid for "alice"
-		alice := "0xcc"
-		result, err := query(ctx, dg, alice)
+		uid := lookupUID(ctx, dg, "Alice")
+
+		result, err := lookupGraph(ctx, dg, uid)
 		if err != nil {
 			log.Fatal("query failed:", err)
 		}
 
 		fmt.Printf("query: [%v] bytes of graph data retrieved.\n", len(result))
-		//fmt.Println("json response:", string(result))
+		ppl := extractPeople(result)
 
-		// Decode the JSON result
-		type Root struct {
-			People []Person `json:"person"`
-		}
-
-		var r Root
-		err = json.Unmarshal(result, &r)
-		if err != nil {
-			log.Fatal("json decoding failed:", err)
-		}
-
-		// The r.People slice should contain the person we set up in the mutation step.
-		fmt.Printf("People: slice lenght: %+d\n", len(r.People))
-		p := r.People[0]
-		fmt.Printf("People: want: 0xcc => have: %+s, name: %s\n", *p.UID, p.Name) // %#v
+		// The slice should contain the person we set up in the mutation step.
+		// fmt.Printf("query: people slice lenght: %+d\n", len(ppl))
+		fmt.Printf("query: want: %v => have: %+s, name: %s\n", uid, *ppl[0].UID, ppl[0].Name) // %#v
 
 	case "drop-data":
 		// drop all data in the database.
