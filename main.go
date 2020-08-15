@@ -242,7 +242,7 @@ func extractUID(res []byte) string {
 		log.Fatal("json decoding failed:", err)
 		return ""
 	}
-	if len(a.People) < 0 {
+	if len(a.People) < 1 {
 		return ""
 	}
 	return *a.People[0].UID // dereference the string pointer
