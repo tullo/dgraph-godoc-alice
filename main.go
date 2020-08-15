@@ -137,6 +137,9 @@ func setupPerson() Person {
 // run the 'set' mutation.
 func mutate(ctx context.Context, dg *dgo.Dgraph, p Person) (map[string]string, error) {
 
+	txn := dg.NewTxn()
+	defer txn.Discard(ctx)
+
 	// 1. json encode the person struct
 	pb, err := json.Marshal(p)
 	if err != nil {
@@ -152,7 +155,7 @@ func mutate(ctx context.Context, dg *dgo.Dgraph, p Person) (map[string]string, e
 	//fmt.Printf("SetJson: %#v\n", string(mu.SetJson))
 
 	// 3. run the 'set' mutation on the cluster node
-	resp, err := dg.NewTxn().Mutate(ctx, &mu)
+	resp, err := txn.Mutate(ctx, &mu)
 	if err != nil {
 		return nil, err
 	}
@@ -164,9 +167,11 @@ func mutate(ctx context.Context, dg *dgo.Dgraph, p Person) (map[string]string, e
 
 // query retrieves graph data from the database.
 func query(ctx context.Context, dg *dgo.Dgraph, r *api.Request) ([]byte, error) {
-	// resp, err := dg.NewTxn().Query(ctx, r.Query)                  // no variables
-	// resp, err := dg.NewTxn().QueryWithVars(ctx, r.Query, r.Vars)  // with variables
-	resp, err := dg.NewTxn().Do(ctx, r) // with or without variables
+	txn := dg.NewTxn()
+	defer txn.Discard(ctx)
+	// resp, err := txn.Query(ctx, r.Query)                  // no variables
+	// resp, err := txn.QueryWithVars(ctx, r.Query, r.Vars)  // with variables
+	resp, err := txn.Do(ctx, r) // with or without variables
 	if err != nil {
 		return nil, err
 	}
