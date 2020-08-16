@@ -1,6 +1,7 @@
 # https://docs.docker.com/compose/compose-file
 # Docker-compose Tricks and Best Practices
 # https://medium.com/factualopinions/docker-compose-tricks-and-best-practices-5e7e43eba8eb
+# https://dgraph.io/docs/master/deploy/config/ (envars)
 
 version: '3.8'
 
@@ -9,7 +10,6 @@ networks:
     driver: bridge
 
 services:
-
   # Dgraph Zero controls the Dgraph cluster, assigns servers to a group, and re-balances data between server groups.
   dgraph-zero:
     image: dgraph/dgraph:v20.07.0
@@ -18,7 +18,18 @@ services:
       - shared-network
     environment:
       - DGRAPH_ZERO_MY=dgraph-zero:5080
-    command: dgraph zero --enable_sentry=false
+      - DGRAPH_ZERO_ENABLE_SENTRY=false
+    command: dgraph zero
+    volumes:
+      - type: volume
+        source: dgraph
+        target: /dgraph
+        volume:
+          nocopy: true
+    ports:
+      - 5080:5080
+      - 6080:6080
+    restart: on-failure
 
   # Dgraph Alpha hosts predicates and indexes.
   # Predicates are either the properties associated with a node or the relationship between two nodes.
@@ -28,17 +39,25 @@ services:
     networks:
       - shared-network
     image: dgraph/dgraph:v20.07.0
+    volumes:
+      - type: volume
+        source: dgraph
+        target: /dgraph
+        volume:
+          nocopy: true
     ports:
       - 8080:8080
       - 9080:9080
     depends_on:
       - dgraph-zero
+    restart: on-failure
     environment:
       - DGRAPH_ALPHA_MY=dgraph-alpha:7080
-      - DGRAPH_ALPHA_LRU_MB=1024
+      - DGRAPH_ALPHA_LRU_MB=2048
       - DGRAPH_ALPHA_ZERO=dgraph-zero:5080
       - DGRAPH_ALPHA_WHITELIST=0.0.0.0/0
-    command: dgraph alpha --vmodule=server=3 --enable_sentry=false
+      - DGRAPH_ALPHA_ENABLE_SENTRY=false
+    command: dgraph alpha --vmodule=server=3
 
   # Ratel serves the UI to run queries, mutations & altering schema.
   dgraph-ratel:
@@ -46,6 +65,14 @@ services:
     container_name: dgraph-ratel
     networks:
       - shared-network
+    volumes:
+      - type: volume
+        source: dgraph
+        target: /dgraph
+        volume:
+          nocopy: true
     ports:
       - 8000:8000
     command: dgraph-ratel
+volumes:
+  dgraph:
