@@ -32,3 +32,6 @@ dgraph-logs:
 	
 dgraph-up:
 	@docker-compose up --detach --remove-orphans
+
+ratel-ui:
+	@firefox http://localhost:8000/?local
