@@ -8,3 +8,12 @@
 ## Dgraph
 
 [Type System](https://dgraph.io/docs/query-language/type-system/)
+
+## Docker Compose
+
+* [Compose](https://github.com/dgraph-io/dgraph/tree/master/contrib/config/docker) files for (single, multi, ha) -node cluster setup
+* [dgraph/docker-compose.yml](https://github.com/dgraph-io/dgraph/blob/master/dgraph/docker-compose.yml)
+
+## Kubernetes
+
+* [YAML](https://github.com/dgraph-io/dgraph/tree/master/contrib/config/kubernetes) files for (single, ha) -node cluster setup
