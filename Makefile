@@ -35,3 +35,18 @@ dgraph-up:
 
 ratel-ui:
 	@firefox http://localhost:8000/?local
+
+.PHONY: check
+check:
+	$(shell go env GOPATH)/bin/staticcheck -go 1.15 -tests ./...
+
+.PHONY: clone
+clone:
+	@git clone git@github.com:dominikh/go-tools.git /tmp/go-tools \
+		&& cd /tmp/go-tools \
+		&& git checkout "2020.1.5" \
+
+.PHONY: install
+install:
+	@cd /tmp/go-tools && go install -v ./cmd/staticcheck
+	$(shell go env GOPATH)/bin/staticcheck -debug.version
