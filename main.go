@@ -391,6 +391,4 @@ func main() {
 		fmt.Println("drop-data: drop all data in the database")
 		fmt.Println("drop-schema: drop data and schema in the database")
 	}
-
-	return
 }
