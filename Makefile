@@ -44,7 +44,7 @@ check:
 clone:
 	@git clone git@github.com:dominikh/go-tools.git /tmp/go-tools \
 		&& cd /tmp/go-tools \
-		&& git checkout "2020.1.5" \
+		&& git checkout "2020.1.6" \
 
 .PHONY: install
 install:
