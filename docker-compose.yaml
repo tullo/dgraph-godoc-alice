@@ -12,7 +12,7 @@ networks:
 services:
   # Dgraph Zero controls the Dgraph cluster, assigns servers to a group, and re-balances data between server groups.
   dgraph-zero:
-    image: dgraph/dgraph:v20.07.2
+    image: dgraph/dgraph:v20.11.0
     container_name: dgraph-zero
     networks:
       - shared-network
@@ -38,7 +38,7 @@ services:
     container_name: dgraph-alpha
     networks:
       - shared-network
-    image: dgraph/dgraph:v20.07.2
+    image: dgraph/dgraph:v20.11.0
     volumes:
       - type: volume
         source: dgraph
@@ -61,7 +61,7 @@ services:
 
   # Ratel serves the UI to run queries, mutations & altering schema.
   dgraph-ratel:
-    image: dgraph/dgraph:v20.07.2
+    image: dgraph/dgraph:v20.11.0
     container_name: dgraph-ratel
     networks:
       - shared-network
