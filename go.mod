@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dgraph-io/dgo/v200 v200.0.0-20210212152539-e0a5bde40ba2
+	github.com/dgraph-io/dgo/v200 ba0e5dfc4c3e
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
