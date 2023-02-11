@@ -11,6 +11,7 @@ import (
 	"github.com/dgraph-io/dgo/v200"
 	"github.com/dgraph-io/dgo/v200/protos/api"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type School struct {
@@ -303,7 +304,7 @@ func upsert(ctx context.Context, dg *dgo.Dgraph) ([]byte, error) {
 func main() {
 
 	// connect to a dgraph cluster node (alpha)
-	conn, err := grpc.Dial("0.0.0.0:9080", grpc.WithInsecure())
+	conn, err := grpc.Dial("0.0.0.0:9080", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal("While trying to dial gRPC")
 	}
