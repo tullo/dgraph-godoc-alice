@@ -25,13 +25,13 @@ deps-upgrade:
 	@go mod tidy
 
 dgraph-down:
-	@docker-compose down --remove-orphans --volumes
+	@docker compose down --remove-orphans --volumes
 
 dgraph-logs:
-	@docker-compose logs -f --tail="10"
+	@docker compose logs -f --tail="10"
 	
 dgraph-up:
-	@docker-compose up --detach --remove-orphans
+	@docker compose up --detach --remove-orphans
 
 ratel-ui:
 	@firefox http://localhost:8000/?local
