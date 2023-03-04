@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/dgraph-io/dgo/v200"
-	"github.com/dgraph-io/dgo/v200/protos/api"
+	"github.com/dgraph-io/dgo/v210"
+	"github.com/dgraph-io/dgo/v210/protos/api"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -302,25 +302,12 @@ func upsert(ctx context.Context, dg *dgo.Dgraph) ([]byte, error) {
 }
 
 func main() {
-
-	// connect to a dgraph cluster node (alpha)
-	conn, err := grpc.Dial("0.0.0.0:9080", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Fatal("While trying to dial gRPC")
-	}
-	defer conn.Close()
-
-	// dgraph client API (gRPC)
-	dc := api.NewDgraphClient(conn)
-	// dgraph client API (backed by one or more cluster nodes)
-	dg := dgo.NewDgraphClient(dc)
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	dg, cancel := getDgraphClient()
 	defer cancel()
 
 	var (
-		uids map[string]string
-		cmd  string
+		//uids map[string]string
+		cmd string
 	)
 
 	if len(os.Args) > 1 {
@@ -329,22 +316,25 @@ func main() {
 
 	switch cmd {
 	case "schema":
+		ctx := context.Background()
 		// create or update the schema
-		err = alterSchema(ctx, dg)
+		err := alterSchema(ctx, dg)
 		if err != nil {
 			log.Fatal("schema failed:", err)
 		}
 		fmt.Println("schema: created.")
 
 	case "mutate":
+		ctx := context.Background()
 		// setup person struct data, and run the 'set' mutation
-		uids, err = mutate(ctx, dg, setupPerson())
+		uids, err := mutate(ctx, dg, setupPerson())
 		if err != nil {
 			log.Fatal("mutation failed:", err)
 		}
 		fmt.Println("mutate: 'set' mutation done. Alice:", uids["alice"])
 
 	case "query":
+		ctx := context.Background()
 		// 'query' graph data using the returned uid for "alice"
 		uid := lookupUID(ctx, dg, "Alice")
 
@@ -361,6 +351,7 @@ func main() {
 		fmt.Printf("query: want: %v => have: %+s, name: %s\n", uid, *ppl[0].UID, ppl[0].Name) // %#v
 
 	case "upsert":
+		ctx := context.Background()
 		// upsert: query + mutation
 		_, err := upsert(ctx, dg)
 		if err != nil {
@@ -368,18 +359,20 @@ func main() {
 		}
 
 	case "drop-data":
+		ctx := context.Background()
 		// drop all data in the database.
 		dropdata := api.Operation{DropOp: api.Operation_DATA}
-		err = alter(ctx, dg, &dropdata)
+		err := alter(ctx, dg, &dropdata)
 		if err != nil {
 			log.Fatal("data droping failed:", err)
 		}
 		fmt.Println("drop-data: droped all the data.")
 
 	case "drop-schema":
+		ctx := context.Background()
 		// drop all data and schema in the database.
 		dropall := api.Operation{DropOp: api.Operation_ALL}
-		err = alter(ctx, dg, &dropall)
+		err := alter(ctx, dg, &dropall)
 		if err != nil {
 			log.Fatal("schema droping failed:", err)
 		}
@@ -391,5 +384,41 @@ func main() {
 		fmt.Println("query: get specified graph data from the database")
 		fmt.Println("drop-data: drop all data in the database")
 		fmt.Println("drop-schema: drop data and schema in the database")
+	}
+}
+
+type CancelFunc func()
+
+func getDgraphClient() (*dgo.Dgraph, CancelFunc) {
+	// connect to a dgraph cluster node (alpha)
+	//conn, err := grpc.Dial("0.0.0.0:9180", grpc.WithInsecure())
+	conn, err := grpc.Dial("0.0.0.0:9080", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatal("While trying to dial gRPC")
+	}
+	dc := api.NewDgraphClient(conn) // dgraph client API (gRPC)
+	dg := dgo.NewDgraphClient(dc)   // dgraph client API (backed by one or more cluster nodes)
+
+	// Perform login call. If the Dgraph cluster does not have ACL and
+	// enterprise features enabled, this call should be skipped.
+	/*
+		ctx := context.Background()
+		for {
+			// Keep retrying until we succeed or receive a non-retriable error.
+			err = dg.Login(ctx, "groot", "password")
+			if err == nil || !strings.Contains(err.Error(), "Please retry") {
+				break
+			}
+			time.Sleep(time.Second)
+		}
+	*/
+	if err != nil {
+		log.Fatalf("While trying to login %v", err.Error())
+	}
+
+	return dg, func() {
+		if err := conn.Close(); err != nil {
+			log.Printf("Error while closing connection:%v", err)
+		}
 	}
 }
