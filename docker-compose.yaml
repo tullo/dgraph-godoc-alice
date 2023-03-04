@@ -16,10 +16,7 @@ services:
     container_name: dgraph-zero
     networks:
       - shared-network
-    environment:
-      - DGRAPH_ZERO_MY=dgraph-zero:5080
-      - DGRAPH_ZERO_ENABLE_SENTRY=false
-    command: dgraph zero
+    command: dgraph zero --my=dgraph-zero:5080
     volumes:
       - type: volume
         source: dgraph
@@ -51,17 +48,12 @@ services:
     depends_on:
       - dgraph-zero
     restart: on-failure
-    environment:
-      - DGRAPH_ALPHA_MY=dgraph-alpha:7080
-      - DGRAPH_ALPHA_LRU_MB=2048
-      - DGRAPH_ALPHA_ZERO=dgraph-zero:5080
-      - DGRAPH_ALPHA_WHITELIST=0.0.0.0/0
-      - DGRAPH_ALPHA_ENABLE_SENTRY=false
-    command: dgraph alpha --vmodule=server=3
+    command: dgraph alpha --my=dgraph-alpha:7080 --zero=dgraph-zero:5080 --security whitelist=0.0.0.0/0
+    # https://dgraph.io/docs/deploy/dgraph-administration/#whitelisting-admin-operations
 
   # Ratel serves the UI to run queries, mutations & altering schema.
   dgraph-ratel:
-    image: dgraph/dgraph:v22.0.2
+    image: dgraph/ratel:latest
     container_name: dgraph-ratel
     networks:
       - shared-network
