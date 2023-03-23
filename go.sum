@@ -6,6 +6,8 @@ github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dgraph-io/dgo/v210 v210.0.0-20220113041351-ba0e5dfc4c3e h1:+RV+hvGYPEqTABBflJss35nBDU9GNq4aKVR85dKqSz0=
 github.com/dgraph-io/dgo/v210 v210.0.0-20220113041351-ba0e5dfc4c3e/go.mod h1:dCzdThGGTPYOAuNtrM6BiXj/86voHn7ZzkPL6noXR3s=
+github.com/dgraph-io/dgo/v210 v210.0.0-20230323161013-c88607f776c1 h1:QLZsQPn63r896/KgPnBFffd7GHnx03T/6QzKW3KXW8M=
+github.com/dgraph-io/dgo/v210 v210.0.0-20230323161013-c88607f776c1/go.mod h1:CG2naMYNm+GEVcc9A6IG+zj5522BREygFb0EW4s5n0Q=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/gogo/protobuf v1.3.2 h1:Ov1cvc58UF3b5XjBnZv7+opcTcQFZebYjWzi34vdm4Q=
