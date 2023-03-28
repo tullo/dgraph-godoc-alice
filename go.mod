@@ -3,7 +3,7 @@ module dgraph-godoc-alice
 go 1.20
 
 require (
-	github.com/dgraph-io/dgo/v210 v210.0.0-20230324202652-adce80282b3a
+	github.com/dgraph-io/dgo/v210 v210.0.0-20230328113526-b66f8ae53a2d
 	google.golang.org/grpc v1.54.0
 )
 
