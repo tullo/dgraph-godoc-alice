@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/dgraph-io/dgo/v230 v230.0.0
-	google.golang.org/grpc v1.54.0
+	google.golang.org/grpc v1.55.0
 )
 
 require (
