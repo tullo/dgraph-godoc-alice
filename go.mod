@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/dgraph-io/dgo/v210 v210.0.0-20230328113526-b66f8ae53a2d
+	github.com/dgraph-io/dgo/v230 v230.0.1
 	google.golang.org/grpc v1.57.0
 )
 
