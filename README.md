@@ -1,9 +1,9 @@
 # dgraph-godoc-alice
 
-Dgraph Go client API (dgo 210.03.0)
+Dgraph Go client API (dgo v230.0.1)
 
 ```go
-import "github.com/dgraph-io/dgo/v210"
+import "github.com/dgraph-io/dgo/v230"
 ```
 
 Docker Compose:

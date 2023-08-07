@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/dgraph-io/dgo/v210"
-	"github.com/dgraph-io/dgo/v210/protos/api"
+	"github.com/dgraph-io/dgo/v230"
+	"github.com/dgraph-io/dgo/v230/protos/api"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
