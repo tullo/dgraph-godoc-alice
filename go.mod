@@ -1,6 +1,6 @@
 module dgraph-godoc-alice
 
-go 1.20
+go 1.22
 
 require (
 	github.com/dgraph-io/dgo/v230 v230.0.1
