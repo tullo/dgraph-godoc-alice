@@ -37,8 +37,8 @@ ratel-ui:
 	@firefox http://localhost:8000/?local
 
 staticcheck:
-	$$(go env GOPATH)/bin/staticcheck -go 1.20 -tests ./...
+	$$(go env GOPATH)/bin/staticcheck -go 1.22 -tests ./...
 
 staticcheck-install:
-	@GO111MODULE=on go install honnef.co/go/tools/cmd/staticcheck@v0.4.0
+	@GO111MODULE=on go install honnef.co/go/tools/cmd/staticcheck@v0.4.7
 	@$$(go env GOPATH)/bin/staticcheck -debug.version
