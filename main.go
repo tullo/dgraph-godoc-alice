@@ -391,8 +391,9 @@ type CancelFunc func()
 
 func getDgraphClient() (*dgo.Dgraph, CancelFunc) {
 	// connect to a dgraph cluster node (alpha)
-	//conn, err := grpc.Dial("0.0.0.0:9180", grpc.WithInsecure())
-	conn, err := grpc.Dial("0.0.0.0:9080", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	var opts []grpc.DialOption
+	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient("0.0.0.0:9080", opts...)
 	if err != nil {
 		log.Fatal("While trying to dial gRPC")
 	}
