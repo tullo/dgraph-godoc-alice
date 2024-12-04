@@ -6,7 +6,7 @@ toolchain go1.23.4
 
 require (
 	github.com/dgraph-io/dgo/v230 v230.0.1
-	google.golang.org/grpc v1.68.0
+	google.golang.org/grpc v1.68.1
 )
 
 require (
