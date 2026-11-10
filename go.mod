@@ -2,7 +2,7 @@ module dgraph-godoc-alice
 
 go 1.26.0
 
-toolchain go1.27.3
+toolchain go1.27.4
 
 require (
 	github.com/dgraph-io/dgo/v230 v230.0.1
